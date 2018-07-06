@@ -1,8 +1,12 @@
 import { Component } from 'react'
 import Head from 'next/head'
 import fetch from 'isomorphic-unfetch'
+import Link from 'next/link'
 
 import Post from '../components/post'
+import Header from '../components/header'
+
+import style from '../src/css/style.scss';
 
 export default class extends Component {
   static async getInitialProps () {
@@ -16,14 +20,14 @@ export default class extends Component {
     return (
       <main>
         <Head>
-          <title>Home page</title>
+          <title>Catalog App</title>
         </Head>
+        <style dangerouslySetInnerHTML={{ __html: style }} />
 
-        <h1>List of posts</h1>
+        <Header />
 
-        <section>
-          {this.props.postList.map(post => <Post {...post} key={post.id} />)}
-        </section>
+        <h2>Welcome to Catalog</h2>
+        <h4>To start, click Admin or Customer button on top of page</h4>
       </main>
     )
   }
