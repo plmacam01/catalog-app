@@ -1,26 +1,12 @@
 {
-  "name": "catalog-app",
-  "author": "Primus Angelo Macam",
+  "name": "with-static-export",
   "main": "server.js",
   "dependencies": {
-    "autoprefixer": "^8.6.4",
-    "babel-plugin-module-resolver": "^3.1.1",
-    "babel-plugin-wrap-in-js": "^1.1.1",
-    "bulma": "^0.7.1",
-    "dotenv": "^6.0.0",
     "express": "^4.15.3",
-    "glob": "^7.1.2",
     "isomorphic-unfetch": "^2.0.0",
-    "moment": "^2.22.2",
     "next": "latest",
-    "node-sass": "^4.9.0",
-    "normalize.css": "^7.0.0",
-    "postcss-easy-import": "^3.0.0",
-    "postcss-loader": "^2.1.5",
-    "raw-loader": "^0.5.1",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
-    "sass-loader": "^6.0.6",
     "serve": "^5.2.2"
   },
   "scripts": {
@@ -30,10 +16,5 @@
     "export": "next export",
     "prestart": "npm run export",
     "start": "serve out"
-  },
-  "devDependencies": {
-    "babel-eslint": "^8.2.5",
-    "cross-env": "^5.2.0",
-    "extract-text-webpack-plugin": "^3.0.2"
   }
 }
