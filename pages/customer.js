@@ -4,23 +4,29 @@ import Head from 'next/head';
 import fetch from 'isomorphic-unfetch';
 
 import Header from '../components/header';
+import LeftNav from '../components/left_menu';
 import Product from '../components/product';
 import Transaction from '../components/transaction';
 
 import style from '../src/css/style.scss';
 
+import { RingLoader } from 'react-spinners';
+
+import getConfig from 'next/config'
+const {publicRuntimeConfig} = getConfig()
+
 export default class extends Component {
-  static async getInitialProps ({ query }) {
-    // fetch single post detail
-    const response = await fetch(`http://127.0.0.1:5000/products`)
-    const products = await response.json()
-    return { ...products }
-  }
+  // static async getInitialProps ({ query }) {
+  //   // fetch single post detail
+  //   const response = await fetch(`${publicRuntimeConfig.API_URL}/products`)
+  //   const products = await response.json()
+  //   return { ...products }
+  // }
 
   constructor(props) {
     super(props);
     this.state = {
-      currentView: "PRODUCTS",
+      currentView: "Products",
       cartItems: [],
       totalPrice: 0,
       showCheckoutModal: false,
@@ -46,6 +52,7 @@ export default class extends Component {
 
   //https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
   postData = (url = ``, data = {}, method) => {
+    this.setState({showLoading: true});
   // Default options are marked with *
     return fetch(url, {
         method: method, // *GET, POST, PUT, DELETE, etc.
@@ -63,27 +70,36 @@ export default class extends Component {
     .then(response => response.json()) // parses response to JSON
     .then(() => this.getProducts())
     .then(() => this.getTransactions())
-    .catch(error => console.error(`Fetch Error =\n`, error));
+    .catch(error => {
+      console.error(`Fetch Error =\n`, error)
+      this.setState({showLoading: false});
+    });
   };
 
   getProducts() {
-    fetch(`http://127.0.0.1:5000/products`)
+    this.setState({showLoading: true});
+    fetch(`${publicRuntimeConfig.API_URL}/products`)
     .then(results => {
       return results.json();
     }).then(data => {
       let products = data.data.filter((value) => {
         return value.status == "ACTIVE" && value.stock > 0
       })
-      this.setState({products: products});
+      this.setState({products: products, showLoading: false});
+    }).catch(() => {
+      this.setState({products: [], showLoading: false});
     })
   }
 
   getTransactions() {
-    fetch(`http://127.0.0.1:5000/transactions`)
+    this.setState({showLoading: true});
+    fetch(`${publicRuntimeConfig.API_URL}/transactions`)
     .then(results => {
       return results.json();
     }).then(data => {
-      this.setState({transactions: data.data});
+      this.setState({transactions: data.data, showLoading: false});
+    }).catch(() => {
+      this.setState({transactions: [], showLoading: false});
     })
   }
 
@@ -148,7 +164,7 @@ export default class extends Component {
     this.setState({cartItems: [], totalPrice: 0});
 
     this.setState({showCheckoutModal: false});
-    let url = "http://127.0.0.1:5000/transactions";
+    let url = `${publicRuntimeConfig.API_URL}/transactions`;
 
     this.postData(url, transaction, 'POST')
   };
@@ -157,9 +173,9 @@ export default class extends Component {
     let tableBody;
     if (data.length > 0) {
       tableBody = (
-        <ol>
-          {data.map(product => <li><Product {...product} addToCart={() => this.addToCart(product)} removeFromCart={() => this.removeFromCart(product)} currentView={view} key={product.id} /></li>)}
-        </ol>
+        <div>
+          {data.map(product => <Product {...product} addToCart={() => this.addToCart(product)} removeFromCart={() => this.removeFromCart(product)} currentView={view} key={product.id} />)}
+        </div>
       );
     } else {
       tableBody = (
@@ -191,35 +207,21 @@ export default class extends Component {
     )
 
 
-    if (this.state.currentView == "PRODUCTS") {
+    if (this.state.currentView == "Products") {
       productsView = (
         <div>
-          <h4 class="title is-4">Products</h4>
           {this.tableBody(products, "PRODUCTS")}
         </div>
       )
-
+    } else if (this.state.currentView == "Cart") {
       cartView = (
         <div>
-          <h4 class="title is-4">Cart</h4>
           {this.tableBody(cartProducts, "CART")}
           <br />
           {totalPrice}
         </div>
       )
-
-      view =(
-        <div class="columns is-mobile is-centered"  style={{marginLeft: "30px"}}>
-          <div class="column">
-            { productsView }
-          </div>
-          <div class="column">
-            { cartView }
-          </div>
-        </div>
-      )
-
-    } else if (this.state.currentView == "TRANSACTIONS") {
+    } else if (this.state.currentView == "Transactions") {
       if (transactions.length > 0) {
         transactionsView = (
           <ol>
@@ -234,16 +236,18 @@ export default class extends Component {
         )
       }
 
-      view =(
-        <div class="columns is-mobile is-centered"  style={{marginLeft: "30px"}}>
-          <div class="column">
-            { transactionsView }
-          </div>
-        </div>
-      )
+
     }
 
-
+    view =(
+      <div class="columns is-mobile is-centered view_container">
+        <div class="column">
+          { productsView}
+          { cartView }
+          { transactionsView }
+        </div>
+      </div>
+    )
 
     checkoutModal = (
       <div class="modal is-active">
@@ -264,26 +268,27 @@ export default class extends Component {
       </div>
     )
 
+
     return (
       <main>
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <Head>
           <title>Customer</title>
         </Head>
-        <Header />
-
-        <div class="columns">
-          <div class="column">
-            <div class="columns is-mobile is-centered">
-              <div class="column is-one-fifth"><button className="button is-primary" onClick={() => this.changeView("PRODUCTS")}>Products</button></div>
-              <div class="column"><button className="button is-primary" onClick={() => this.changeView("TRANSACTIONS")}>Transactions</button></div>
-            </div>
-          </div>
-        </div>
+        <Header view={this.state.currentView}/>
+        <LeftNav items={[{title: "Products", view:"PRODUCTS"}, {"title":"Cart", view:"CART"}, {title:"Transactions", view:"TRANSACTIONS"}]} changeView={this.changeView}/>
 
         { view }
 
         {this.state.showCheckoutModal && checkoutModal}
+
+        {
+          this.state.showLoading &&
+          <div className="modal is-active">
+            <div className="modal-background"></div>
+            <RingLoader loading={true} color="#FFFFFF" size="200"/>
+          </div>
+        }
 
       </main>
     )
