@@ -6,26 +6,33 @@ import fetch from 'isomorphic-unfetch'
 import Header from '../components/header'
 import Admin_Product from '../components/admin_product'
 import Transaction from '../components/admin_transaction'
+import LeftNav from '../components/left_menu';
+
+import { RingLoader } from 'react-spinners';
 
 import style from '../src/css/style.scss';
 
+import getConfig from 'next/config'
+const {publicRuntimeConfig} = getConfig()
+
 export default class extends Component {
-  static async getInitialProps ({ query }) {
-    // fetch single post detail
-    const response = await fetch(`http://127.0.0.1:5000/products`)
-    const products = await response.json()
-    return { ...products }
-  }
+  // static async getInitialProps ({ query }) {
+  //   // // fetch single post detail
+  //   const response = await fetch(`${publicRuntimeConfig.API_URL}/products`)
+  //   const products = await response.json()
+  //   return { ...products }
+  // }
 
   constructor(props) {
     super(props);
     this.state = {
-      currentView: "PRODUCTS",
+      currentView: "Products",
       transactions: [],
       products: [],
       showProductModal: false,
       editItem: {},
-      formErrors: {}
+      formErrors: {},
+      showLoading: false,
     };
 
     // This binding is necessary to make `this` work in the callback
@@ -46,20 +53,26 @@ export default class extends Component {
   }
 
   getProducts() {
-    fetch(`http://127.0.0.1:5000/products`)
+    this.setState({showLoading: true});
+    fetch(`${publicRuntimeConfig.API_URL}/products`)
     .then(results => {
       return results.json();
     }).then(data => {
-      this.setState({products: data.data});
+      this.setState({products: data.data, showLoading: false});
+    }).catch(() => {
+      this.setState({products: [], showLoading: false});
     })
   }
 
   getTransactions() {
-    fetch(`http://127.0.0.1:5000/transactions`)
+    this.setState({showLoading: true});
+    fetch(`${publicRuntimeConfig.API_URL}/transactions`)
     .then(results => {
       return results.json();
     }).then(data => {
-      this.setState({transactions: data.data});
+      this.setState({transactions: data.data, showLoading: false});
+    }).catch(() => {
+      this.setState({transactions: [], showLoading: false});
     })
   }
 
@@ -98,10 +111,10 @@ export default class extends Component {
     this.setState({formErrors: errors});
     if (Object.keys(errors).length == 0) {
       this.setState({showProductModal: false})
-      let url = "http://127.0.0.1:5000/products";
+      let url = `${publicRuntimeConfig.API_URL}/products`;
       let method = "POST";
       if (editItem.edit) {
-        url = `http://127.0.0.1:5000/product/${editItem.id}`
+        url = `${publicRuntimeConfig.API_URL}/product/${editItem.id}`
         method = "PUT";
       }
       product.status = 1;
@@ -112,6 +125,7 @@ export default class extends Component {
   //https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
   postData = (url = ``, data = {}, method) => {
   // Default options are marked with *
+    this.setState({showLoading: true});
     return fetch(url, {
         method: method, // *GET, POST, PUT, DELETE, etc.
         mode: "cors", // no-cors, cors, *same-origin
@@ -128,7 +142,10 @@ export default class extends Component {
     .then(response => response.json()) // parses response to JSON
     .then(() => this.getProducts())
     .then(() => this.getTransactions())
-    .catch(error => console.error(`Fetch Error =\n`, error));
+    .catch(error => {
+      console.error(`Fetch Error =\n`, error)
+      this.setState({showLoading: false});
+    });
   };
 
   changeView (view) {
@@ -151,7 +168,7 @@ export default class extends Component {
       status: status
     };
 
-    this.postData(`http://127.0.0.1:5000/product/${data.id}`, product, "PUT");
+    this.postData(`${publicRuntimeConfig.API_URL}/product/${data.id}`, product, "PUT");
   }
 
   changeTransactionStatus (data, status) {
@@ -159,7 +176,7 @@ export default class extends Component {
       status: status
     };
 
-    this.postData(`http://127.0.0.1:5000/transaction/${data.id}`, product, "PUT");
+    this.postData(`${publicRuntimeConfig.API_URL}/transaction/${data.id}`, product, "PUT");
   }
 
   render () {
@@ -167,16 +184,30 @@ export default class extends Component {
     let title;
     let products;
     let transactions;
+    let table;
     let tableBody;
     let totalPrice;
     let productModal;
     let addProductButton;
-    if (this.state.currentView == "PRODUCTS") {
-      title = "Products";
+    if (this.state.currentView == "Products") {
       addProductButton = (<div><button className="button is-primary" onClick={() => this.showProductModalFunc(true)}>Add Product</button></div>)
       products = this.state.products;
       if (products.length > 0) {
         tableBody = (
+          <tbody>
+            {products.map(product => <Admin_Product {...product} editProduct={() => this.editProduct(product)} changeStatus={() => this.changeStatus(product)} currentView={this.state.currentView} key={product.id} />)}
+          </tbody>
+        )
+      } else {
+        tableBody = (
+            <tbody>
+              <tr>
+                <td>No products found</td>
+              </tr>
+            </tbody>
+        )
+      }
+        table = (
           <table className="table is-fullwidth">
             <thead>
               <tr>
@@ -188,30 +219,22 @@ export default class extends Component {
                 <th></th>
               </tr>
             </thead>
-            <tbody>
-              {products.map(product => <Admin_Product {...product} editProduct={() => this.editProduct(product)} changeStatus={() => this.changeStatus(product)} currentView={this.state.currentView} key={product.id} />)}
-            </tbody>
+            {tableBody}
 
           </table>
         );
-      } else {
-        tableBody = (
-          <div>
-            No products found
-          </div>
-        )
-      }
-    } else if (this.state.currentView == "TRANSACTIONS") {
-      title = "Transactions";
+
+
+    } else if (this.state.currentView == "Transactions") {
       transactions = this.state.transactions;
       if (transactions.length > 0) {
-        tableBody = (
+        table = (
           <ol>
             {transactions.map(transaction => <li><Transaction {...transaction} changeTransactionStatus={(val) => this.changeTransactionStatus(transaction, val)} currentView={this.state.currentView} key={transaction.id} /></li>)}
           </ol>
         );
       } else {
-        tableBody = (
+        table = (
           <div>
             No transactions found
           </div>
@@ -223,10 +246,9 @@ export default class extends Component {
 
     view = (
       <div>
-        <h4 className="title is-4">{title}</h4>
         {addProductButton}
         <br />
-        {tableBody}
+        {table}
         <br />
         {totalPrice}
       </div>
@@ -275,15 +297,8 @@ export default class extends Component {
           <title>Admin</title>
         </Head>
 
-        <Header />
-        <div className="columns">
-          <div className="column">
-            <div className="columns is-mobile is-centered">
-              <div className="column is-one-fifth"><button className="button is-primary" onClick={() => this.changeView("PRODUCTS")}>Products</button></div>
-              <div className="column"><button className="button is-primary" onClick={() => this.changeView("TRANSACTIONS")}>Transactions</button></div>
-            </div>
-          </div>
-        </div>
+        <Header view={this.state.currentView}/>
+        <LeftNav items={[{title: "Products", view:"PRODUCTS"}, {title:"Transactions", view:"TRANSACTIONS"}]} changeView={this.changeView}/>
 
         <div className="columns" style={{marginLeft: "30px"}}>
           <div className="column">
@@ -293,6 +308,15 @@ export default class extends Component {
 
 
         {this.state.showProductModal && productModal}
+
+        {
+          this.state.showLoading &&
+          <div className="modal is-active">
+            <div className="modal-background"></div>
+            <RingLoader loading={true} color="#FFFFFF" size="200"/>
+          </div>
+        }
+
 
       </main>
     )
