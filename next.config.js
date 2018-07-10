@@ -32,15 +32,25 @@ module.exports = {
           }
         ]
       }
+    ,
+      {
+      test: /\.(jpe?g|png|gif|svg)$/i,
+      use: [
+        'url-loader?limit=10000',
+        'img-loader'
+      ]
+      }
     )
     return config
   },
   exportPathMap: function() {
     // Setup static export mapping
     return {
-      '/': { page: '/index' },
-      '/admin': {page: '/admin'},
-      '/customer': {page: '/customer'},
+      '/': { page: '/index' }
     };
+  },
+  publicRuntimeConfig: {
+      API_URL: 'http://54.218.251.82:80'
+      // API_URL: 'http://127.0.0.1:5000'
   }
 };
