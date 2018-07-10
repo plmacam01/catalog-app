@@ -5,3 +5,19 @@
 
 // 3. Import the rest of Bulma;
 @import 'bulma/bulma';
+
+.side_menu {
+  width: 150px !important;
+  float: left !important;
+  height: calc(100vh) !important;
+  background: #F2F2F2 !important;
+  margin-right: 30px !important;
+}
+
+.navbar_title {
+  color: white
+}
+
+.view_container {
+  margin: 10px 30px 30px 10px !important;
+}
