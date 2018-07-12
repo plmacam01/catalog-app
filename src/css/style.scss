@@ -11,7 +11,6 @@
   float: left !important;
   height: calc(100vh) !important;
   background: #F2F2F2 !important;
-  margin-right: 30px !important;
 }
 
 .navbar_title {
@@ -20,4 +19,14 @@
 
 .view_container {
   margin: 10px 30px 30px 10px !important;
+}
+
+.page_body {
+  margin-top: 10px !important;
+  max-height: calc(100vh) !important;
+  overflow: scroll !important;
+}
+
+.page_inner_body {
+  margin-left: 40px !important;
 }

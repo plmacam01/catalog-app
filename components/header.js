@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import thumbnail from '../src/images/thumbnail.png';
 
 this.openBurger = () => {
   const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
@@ -40,12 +39,12 @@ export default props =>
       <div className="navbar-item">
         <div className="field is-grouped">
           <p className="control">
-            <Link href='/admin'>
+            <Link href='/admin_products'>
             <a className="button is-primary">Admin</a>
             </Link>
           </p>
           <p className="control">
-            <Link href='/customer'>
+            <Link href='/customer_products'>
             <a className="button is-link">Customer</a>
             </Link>
           </p>

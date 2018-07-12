@@ -26,7 +26,7 @@ export default class extends Component {
 
         <Header />
 
-        <h2>Welcome to Catalog</h2>
+        <h2>Welcome to Swerl</h2>
         <h4>To start, click Admin or Customer button on top of page</h4>
       </main>
     )

@@ -5,8 +5,8 @@ import fetch from 'isomorphic-unfetch';
 
 import Header from '../components/header';
 import LeftNav from '../components/left_menu';
-import Product from '../components/product';
-import Transaction from '../components/transaction';
+import Products from '../components/product';
+import Loading from '../components/loading';
 
 import style from '../src/css/style.scss';
 
@@ -16,38 +16,25 @@ import getConfig from 'next/config'
 const {publicRuntimeConfig} = getConfig()
 
 export default class extends Component {
-  // static async getInitialProps ({ query }) {
-  //   // fetch single post detail
-  //   const response = await fetch(`${publicRuntimeConfig.API_URL}/products`)
-  //   const products = await response.json()
-  //   return { ...products }
-  // }
-
   constructor(props) {
     super(props);
     this.state = {
-      currentView: "Products",
       cartItems: [],
       totalPrice: 0,
       showCheckoutModal: false,
-      transactions: [],
-      products: [],
     };
 
     // This binding is necessary to make `this` work in the callback
     this.addToCart = this.addToCart.bind(this);
     this.removeFromCart = this.removeFromCart.bind(this);
-    this.changeView = this.changeView.bind(this);
+    this.showCart = this.showCart.bind(this);
     this.checkoutItems = this.checkoutItems.bind(this);
     this.showCheckout = this.showCheckout.bind(this);
-    this.tableBody = this.tableBody.bind(this);
     this.getProducts = this.getProducts.bind(this);
-    this.getTransactions = this.getTransactions.bind(this);
   }
 
   componentDidMount() {
     this.getProducts();
-    this.getTransactions();
   }
 
   //https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
@@ -91,18 +78,6 @@ export default class extends Component {
     })
   }
 
-  getTransactions() {
-    this.setState({showLoading: true});
-    fetch(`${publicRuntimeConfig.API_URL}/transactions`)
-    .then(results => {
-      return results.json();
-    }).then(data => {
-      this.setState({transactions: data.data, showLoading: false});
-    }).catch(() => {
-      this.setState({transactions: [], showLoading: false});
-    })
-  }
-
   addToCart (data) {
     if (data.stock > 0) {
       let cartItems = this.state.cartItems;
@@ -140,12 +115,12 @@ export default class extends Component {
     this.setState({cartItems: cartItems, totalPrice: parseFloat(totalPrice).toFixed(2)});
   }
 
-  changeView (view) {
-    this.setState({currentView: view})
+  showCart (data) {
+    this.setState({showCartModal: data})
   }
 
   showCheckout (data) {
-    this.setState({showCheckoutModal: data})
+    this.setState({showCheckoutModal: data, showCartModal: !data})
   };
 
   checkoutItems (data) {
@@ -169,106 +144,7 @@ export default class extends Component {
     this.postData(url, transaction, 'POST')
   };
 
-  tableBody(data, view) {
-    let tableBody;
-    if (data.length > 0) {
-      tableBody = (
-        <div>
-          {data.map(product => <Product {...product} addToCart={() => this.addToCart(product)} removeFromCart={() => this.removeFromCart(product)} currentView={view} key={product.id} />)}
-        </div>
-      );
-    } else {
-      tableBody = (
-        <div>
-          No products found
-        </div>
-      )
-    }
-    return tableBody;
-  };
-
   render () {
-    let productsView;
-    let cartView;
-    let transactionsView;
-    let view;
-    let title;
-    let totalPrice;
-    let checkoutModal;
-    let products = this.state.products;
-    let transactions = this.state.transactions;
-
-    let cartProducts = this.state.cartItems;
-    totalPrice = (
-      <div>
-        <h5 class="title is-5">Total: {this.state.totalPrice}</h5>
-        {this.state.totalPrice > 0 && <div><button className="button is-primary" onClick={() => this.showCheckout(true)}>Checkout</button></div>}
-      </div>
-    )
-
-
-    if (this.state.currentView == "Products") {
-      productsView = (
-        <div>
-          {this.tableBody(products, "PRODUCTS")}
-        </div>
-      )
-    } else if (this.state.currentView == "Cart") {
-      cartView = (
-        <div>
-          {this.tableBody(cartProducts, "CART")}
-          <br />
-          {totalPrice}
-        </div>
-      )
-    } else if (this.state.currentView == "Transactions") {
-      if (transactions.length > 0) {
-        transactionsView = (
-          <ol>
-            {transactions.map(transaction => <li><Transaction {...transaction} editProduct={() => this.editProduct(transaction)} disableProduct={() => this.disableProduct(transaction)} currentView={this.state.currentView} key={transaction.id} /></li>)}
-          </ol>
-        );
-      } else {
-        transactionsView = (
-          <div>
-            No transactions found
-          </div>
-        )
-      }
-
-
-    }
-
-    view =(
-      <div class="columns is-mobile is-centered view_container">
-        <div class="column">
-          { productsView}
-          { cartView }
-          { transactionsView }
-        </div>
-      </div>
-    )
-
-    checkoutModal = (
-      <div class="modal is-active">
-        <div class="modal-background"></div>
-        <div class="modal-card">
-          <header class="modal-card-head">
-            <p class="modal-card-title">Checkout</p>
-          </header>
-          <section class="modal-card-body">
-            Are you sure you want to checkout your cart?
-          </section>
-          <footer class="modal-card-foot">
-            <div class="column"></div>
-            <button class="button" onClick={() => this.showCheckout(false)}>Cancel</button>
-            <button class="button is-success" onClick={() => this.checkoutItems()}>Yes</button>
-          </footer>
-        </div>
-      </div>
-    )
-
-
     return (
       <main>
         <style dangerouslySetInnerHTML={{ __html: style }} />
@@ -276,19 +152,57 @@ export default class extends Component {
           <title>Customer</title>
         </Head>
         <Header view={this.state.currentView}/>
-        <LeftNav items={[{title: "Products", view:"PRODUCTS"}, {"title":"Cart", view:"CART"}, {title:"Transactions", view:"TRANSACTIONS"}]} changeView={this.changeView}/>
+        <LeftNav items={[{title: "Products", view:"customer_products"}, {title:"Transactions", view:"customer_transactions"}]} changeView={this.changeView}/>
 
-        { view }
 
-        {this.state.showCheckoutModal && checkoutModal}
 
-        {
-          this.state.showLoading &&
-          <div className="modal is-active">
-            <div className="modal-background"></div>
-            <RingLoader loading={true} color="#FFFFFF" size="200"/>
+        <div className="columns page_body">
+          <div className="column page_inner_body">
+            <div><button className="button is-primary right" onClick={() => this.showCart(true)}>View Cart</button></div>
+            <Products products={this.state.products} addToCart={(product) => this.addToCart(product)} removeFromCart={(product) => this.removeFromCart(product)} currentView="PRODUCTS"/>
+          </div>
+        </div>
+
+        {this.state.showCheckoutModal &&
+          <div class="modal is-active">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+              <header class="modal-card-head">
+                <p class="modal-card-title">Checkout</p>
+              </header>
+              <section class="modal-card-body">
+                Are you sure you want to checkout your cart?
+              </section>
+              <footer class="modal-card-foot">
+                <div class="column"></div>
+                <button class="button" onClick={() => this.showCheckout(false)}>Cancel</button>
+                <button class="button is-success" onClick={() => this.checkoutItems()}>Yes</button>
+              </footer>
+            </div>
           </div>
         }
+
+        {this.state.showCartModal &&
+          <div class="modal is-active">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+              <header class="modal-card-head">
+                <p class="modal-card-title">Cart</p>
+                <button class="delete" aria-label="close" onClick={() => this.showCart(false)}></button>
+              </header>
+              <section class="modal-card-body">
+                <Products products={this.state.cartItems} addToCart={(product) => this.addToCart(product)} removeFromCart={(product) => this.removeFromCart(product)} currentView="CART"/>
+              </section>
+              <footer class="modal-card-foot">
+                <div class="column"></div>
+                <p>Total: {this.state.totalPrice} </p>
+                <button class="button is-primary" onClick={() => this.showCheckout(true)}>Checkout</button>
+              </footer>
+            </div>
+          </div>
+        }
+
+        <Loading show={this.state.showLoading} />
 
       </main>
     )
